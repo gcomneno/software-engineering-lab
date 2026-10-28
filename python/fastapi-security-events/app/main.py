@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, HTTPException, status
 
 from app.repository import (
@@ -6,13 +8,19 @@ from app.repository import (
 )
 from app.schemas import SecurityEvent, SecurityEventCreate
 from app.service import EventService
+from app.sqlite_repository import SQLiteEventRepository
 
 
-def create_app() -> FastAPI:
-    """Build an isolated application instance for each test fixture."""
+def create_app(database_path: str | Path | None = None) -> FastAPI:
+    """Build an app with in-memory or file-backed event storage."""
     app = FastAPI(title="Security Events Lab", version="0.1.0")
-    # This repository belongs to one application instance only.
-    repository = InMemoryEventRepository()
+    # The default preserves the original isolated test behavior.
+    # A supplied database path enables durable, shared SQLite storage.
+    repository = (
+        InMemoryEventRepository()
+        if database_path is None
+        else SQLiteEventRepository(database_path)
+    )
 
     def get_service() -> EventService:
         """Inject the application service into HTTP handlers."""

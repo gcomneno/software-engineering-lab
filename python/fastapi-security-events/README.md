@@ -57,6 +57,45 @@ curl -X POST http://127.0.0.1:8000/events \
 - Invalid request bodies: 422.
 - `GET /events/{event_id}`: 200 when found, 404 otherwise.
 
+## SQLite persistence experiment
+
+The application defaults to isolated in-memory storage to preserve the
+original API tests. To use durable SQLite storage, supply a database path
+when creating the application:
+
+```python
+from app.main import create_app
+
+app = create_app(database_path="security-events.sqlite3")
+```
+
+The SQLite repository implements the same `EventRepository` protocol as
+the in-memory repository. The service and HTTP handlers do not need to
+know which storage implementation they receive.
+
+The `event_id` column is a primary key. SQLite enforces uniqueness
+atomically, even when separate connections attempt concurrent inserts.
+A primary-key violation becomes `DuplicateEventError`, which the HTTP
+layer translates into status 409.
+
+Each repository operation opens and closes its own connection. Inserts
+use an explicit transaction and commit only after SQLite accepts the
+record. Other database errors are not misclassified as duplicates.
+
+Run all tests with:
+
+```bash
+uv run --no-sync pytest -q
+```
+
+The SQLite tests use temporary database files and include a concurrent
+duplicate-insertion scenario.
+
+SQLite is useful for this educational exercise, but production systems
+must additionally consider schema migrations, database backups,
+multi-process deployment, write contention, authorization, and
+operational monitoring.
+
 ## Important limitations
 
 This first version is **not production-ready**:
