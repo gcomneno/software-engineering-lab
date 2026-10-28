@@ -47,6 +47,7 @@ Example request:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/events \
+  -H "X-API-Key: $SECURITY_EVENTS_API_KEY" \
   -H 'Content-Type: application/json' \
   -d '{"event_id":"evt-001","source":"firewall-01","severity":"HIGH","timestamp":"2026-10-28T09:30:00Z"}'
 ```
@@ -56,6 +57,24 @@ curl -X POST http://127.0.0.1:8000/events \
 - `POST /events`: 201 on creation, 409 for duplicate identifiers.
 - Invalid request bodies: 422.
 - `GET /events/{event_id}`: 200 when found, 404 otherwise.
+
+## API key authentication
+
+Creating events requires the `X-API-Key` header. Configure the
+shared secret before starting the application:
+
+```bash
+export SECURITY_EVENTS_API_KEY='replace-with-a-private-secret'
+uv run --no-sync uvicorn app.main:app --reload
+```
+
+Use the same value in the header of `POST /events` requests.
+Missing or invalid credentials receive HTTP 401. `GET /events/{event_id}`
+remains public in this educational exercise.
+
+Missing configuration prevents application startup. Tests can supply
+a non-production credential through `create_app(api_key=...)`.
+Do not commit secrets or `.env` files. Use HTTPS in real deployments.
 
 ## SQLite persistence experiment
 

@@ -14,6 +14,9 @@ from app.repository import DuplicateEventError
 from app.schemas import SecurityEvent
 from app.sqlite_repository import SQLiteEventRepository
 
+TEST_API_KEY = "test-only-api-key"
+AUTH_HEADERS = {"X-API-Key": TEST_API_KEY}
+
 
 def make_event(event_id: str = "evt-001") -> SecurityEvent:
     """Create a valid event without involving HTTP."""
@@ -75,10 +78,10 @@ def test_sqlite_persists_between_application_instances(tmp_path: Path):
     database_path = tmp_path / "events.sqlite3"
     payload = make_event().model_dump(mode="json")
 
-    with TestClient(create_app(database_path=database_path)) as first:
-        assert first.post("/events", json=payload).status_code == 201
+    with TestClient(create_app(database_path=database_path, api_key=TEST_API_KEY)) as first:
+        assert first.post("/events", json=payload, headers=AUTH_HEADERS).status_code == 201
 
-    with TestClient(create_app(database_path=database_path)) as second:
+    with TestClient(create_app(database_path=database_path, api_key=TEST_API_KEY)) as second:
         response = second.get("/events/evt-001")
 
     assert response.status_code == 200
@@ -90,9 +93,9 @@ def test_sqlite_http_duplicate_returns_conflict(tmp_path: Path):
     database_path = tmp_path / "events.sqlite3"
     payload = make_event().model_dump(mode="json")
 
-    with TestClient(create_app(database_path=database_path)) as client:
-        first = client.post("/events", json=payload)
-        second = client.post("/events", json=payload)
+    with TestClient(create_app(database_path=database_path, api_key=TEST_API_KEY)) as client:
+        first = client.post("/events", json=payload, headers=AUTH_HEADERS)
+        second = client.post("/events", json=payload, headers=AUTH_HEADERS)
 
     assert first.status_code == 201
     assert second.status_code == 409
