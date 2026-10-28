@@ -1,0 +1,19 @@
+[project]
+name = "fastapi-security-events"
+version = "0.1.0"
+description = "Educational security event ingestion API"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.27,<1",
+    "pytest>=8,<10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]  # Make the local app package importable by pytest.
